@@ -1,4 +1,4 @@
--- 🔄 Paradise Egg Full AFK Farming Script (Self-contained, Looping)
+-- 🔄 Paradise Egg AFK Farming Script (Revised: Smarter Egg Placement)
 
 -- Teams
 getgenv().baldTeam = 1
@@ -8,33 +8,31 @@ getgenv().sealTeam = 3
 -- Egg target
 getgenv().eggPlace = {"Paradise Egg"}
 
--- Pets that can be sold (ONLY Paradise Egg pets except Mimic Octopus and 4KG+)
+-- Pets to sell (except Mimic Octopus & 4KG+)
 getgenv().petSell = {
     "Ostrich",
     "Peacock",
     "Scarlet Macaw",
     "Capybara"
-    -- Mimic Octopus excluded completely
 }
 
--- Sell filter settings
-getgenv().KG = 3                          -- Will not sell pets 4KG and above
+-- Sell filter
+getgenv().KG = 3                          -- Only pets below 4KG will be sold
 getgenv().noSellPets = {"Mimic Octopus"}  -- Never sell this pet
-getgenv().lockPets = {"Brontosaurus"}     -- Lock Brontosaurus (cannot be sold once placed)
+getgenv().lockPets = {"Brontosaurus"}     -- Lock Brontosaurus
 
--- Special rule:
--- If ANY pet with 3KG weight is detected -> place 4 Brontosaurus
+-- Special rule: Place 4 Brontosaurus if any 3KG pet is detected
 getgenv().placeBrontoOn3KG = true  
 getgenv().brontoCount = 4                 -- Number of Brontosaurus to place
 
--- General farming settings
+-- General settings
 getgenv().Age = 1
 getgenv().maxEgg = 8
 getgenv().autoPlaceEgg = true
 getgenv().farmEggs = true
 
 -------------------------------
--- AFK FARMING LOOP LOGIC
+-- REVISED AFK FARMING LOOP
 -------------------------------
 
 local Players = game:GetService("Players")
@@ -45,7 +43,7 @@ local function printInfo(s)
     pcall(function() print("[Paradise Egg]: "..s) end)
 end
 
--- Function to check if a pet can be sold
+-- Check if a pet can be sold
 local function isSellable(pet)
     for _,name in ipairs(getgenv().noSellPets) do
         if pet.Name == name then return false end
@@ -56,7 +54,7 @@ local function isSellable(pet)
     return false
 end
 
--- Function to check if a pet should be locked
+-- Check if a pet should be locked
 local function shouldLock(pet)
     for _,name in ipairs(getgenv().lockPets) do
         if pet.Name == name then return true end
@@ -64,13 +62,12 @@ local function shouldLock(pet)
     return false
 end
 
--- Function to place Brontosaurus if a 3KG pet is detected
+-- Place Brontosaurus if a 3KG pet is detected
 local function checkAndPlaceBronto(petList)
     for _,pet in ipairs(petList) do
         if (pet.KG or 0) == 3 then
             printInfo("Detected 3KG pet, placing Brontosaurus...")
             for i = 1, getgenv().brontoCount do
-                -- Replace with actual remote logic if necessary
                 if ReplicatedStorage:FindFirstChild("Remote") and ReplicatedStorage.Remote:FindFirstChild("PlacePet") then
                     ReplicatedStorage.Remote.PlacePet:FireServer("Brontosaurus")
                 end
@@ -84,7 +81,6 @@ end
 spawn(function()
     printInfo("Automation started! You can AFK now.")
     while getgenv().farmEggs do
-        -- Get player's pets (adjust as needed for your game)
         local pets = (player:FindFirstChild("Pets") and player.Pets:GetChildren()) or {}
 
         -- Sell pets logic
@@ -107,7 +103,7 @@ spawn(function()
             checkAndPlaceBronto(pets)
         end
 
-        -- Place eggs logic
+        -- Place eggs only if needed
         if getgenv().autoPlaceEgg then
             local eggCount = 0
             for _,egg in ipairs((player:FindFirstChild("Eggs") and player.Eggs:GetChildren()) or {}) do
@@ -116,16 +112,19 @@ spawn(function()
                 end
             end
             if eggCount < getgenv().maxEgg then
-                printInfo("Placing "..(getgenv().maxEgg - eggCount).." eggs...")
-                for i=1, (getgenv().maxEgg - eggCount) do
+                local eggsToPlace = getgenv().maxEgg - eggCount
+                printInfo("Placing "..eggsToPlace.." eggs...")
+                for i=1, eggsToPlace do
                     if ReplicatedStorage:FindFirstChild("Remote") and ReplicatedStorage.Remote:FindFirstChild("PlaceEgg") then
                         ReplicatedStorage.Remote.PlaceEgg:FireServer(getgenv().eggPlace[1])
                     end
                 end
+            else
+                printInfo("Max eggs ("..getgenv().maxEgg..") already placed, skipping egg placement.")
             end
         end
 
-        wait(10) -- Delay (seconds) before repeating the loop. Adjust as needed.
+        wait(10) -- Wait 10 seconds before looping again to avoid spam
     end
     printInfo("Automation stopped.")
 end)
