@@ -1,0 +1,34 @@
+-- 🔧 Final Modified Automation Script for Paradise Egg
+
+-- Teams
+getgenv().baldTeam = 1
+getgenv().koiTeam = 2
+getgenv().sealTeam = 3
+
+-- Egg target
+getgenv().eggPlace = {"Paradise Egg"}
+
+-- Pets that can be sold (ONLY Paradise Egg pets except Mimic Octopus and 4KG+)
+getgenv().petSell = {
+    "Ostrich",
+    "Peacock",
+    "Scarlet Macaw",
+    "Capybara"
+    -- Mimic Octopus excluded completely
+}
+
+-- Sell filter settings
+getgenv().KG = 3                          -- Will not sell pets 4KG and above
+getgenv().noSellPets = {"Mimic Octopus"}  -- Never sell this pet
+getgenv().lockPets = {"Brontosaurus"}     -- Lock Brontosaurus (cannot be sold once placed)
+
+-- Special rule:
+-- If ANY pet with 3KG weight is detected -> place 4 Brontosaurus
+getgenv().placeBrontoOn3KG = true  
+getgenv().brontoCount = 4                 -- Number of Brontosaurus to place
+
+-- General farming settings
+getgenv().Age = 1
+getgenv().maxEgg = 8
+getgenv().autoPlaceEgg = true
+getgenv().farmEggs = true
