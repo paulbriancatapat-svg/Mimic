@@ -1,0 +1,131 @@
+-- 🔄 Paradise Egg Full AFK Farming Script (Self-contained, Looping)
+
+-- Teams
+getgenv().baldTeam = 1
+getgenv().koiTeam = 2
+getgenv().sealTeam = 3
+
+-- Egg target
+getgenv().eggPlace = {"Paradise Egg"}
+
+-- Pets that can be sold (ONLY Paradise Egg pets except Mimic Octopus and 4KG+)
+getgenv().petSell = {
+    "Ostrich",
+    "Peacock",
+    "Scarlet Macaw",
+    "Capybara"
+    -- Mimic Octopus excluded completely
+}
+
+-- Sell filter settings
+getgenv().KG = 3                          -- Will not sell pets 4KG and above
+getgenv().noSellPets = {"Mimic Octopus"}  -- Never sell this pet
+getgenv().lockPets = {"Brontosaurus"}     -- Lock Brontosaurus (cannot be sold once placed)
+
+-- Special rule:
+-- If ANY pet with 3KG weight is detected -> place 4 Brontosaurus
+getgenv().placeBrontoOn3KG = true  
+getgenv().brontoCount = 4                 -- Number of Brontosaurus to place
+
+-- General farming settings
+getgenv().Age = 1
+getgenv().maxEgg = 8
+getgenv().autoPlaceEgg = true
+getgenv().farmEggs = true
+
+-------------------------------
+-- AFK FARMING LOOP LOGIC
+-------------------------------
+
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local player = Players.LocalPlayer
+
+local function printInfo(s)
+    pcall(function() print("[Paradise Egg]: "..s) end)
+end
+
+-- Function to check if a pet can be sold
+local function isSellable(pet)
+    for _,name in ipairs(getgenv().noSellPets) do
+        if pet.Name == name then return false end
+    end
+    for _,name in ipairs(getgenv().petSell) do
+        if pet.Name == name and (pet.KG or 0) <= getgenv().KG then return true end
+    end
+    return false
+end
+
+-- Function to check if a pet should be locked
+local function shouldLock(pet)
+    for _,name in ipairs(getgenv().lockPets) do
+        if pet.Name == name then return true end
+    end
+    return false
+end
+
+-- Function to place Brontosaurus if a 3KG pet is detected
+local function checkAndPlaceBronto(petList)
+    for _,pet in ipairs(petList) do
+        if (pet.KG or 0) == 3 then
+            printInfo("Detected 3KG pet, placing Brontosaurus...")
+            for i = 1, getgenv().brontoCount do
+                -- Replace with actual remote logic if necessary
+                if ReplicatedStorage:FindFirstChild("Remote") and ReplicatedStorage.Remote:FindFirstChild("PlacePet") then
+                    ReplicatedStorage.Remote.PlacePet:FireServer("Brontosaurus")
+                end
+            end
+            break
+        end
+    end
+end
+
+-- Main farming loop
+spawn(function()
+    printInfo("Automation started! You can AFK now.")
+    while getgenv().farmEggs do
+        -- Get player's pets (adjust as needed for your game)
+        local pets = (player:FindFirstChild("Pets") and player.Pets:GetChildren()) or {}
+
+        -- Sell pets logic
+        for _,pet in ipairs(pets) do
+            if isSellable(pet) then
+                printInfo("Selling pet: "..pet.Name.." KG: "..tostring(pet.KG or "?"))
+                if ReplicatedStorage:FindFirstChild("Remote") and ReplicatedStorage.Remote:FindFirstChild("SellPet") then
+                    ReplicatedStorage.Remote.SellPet:FireServer(pet)
+                end
+            elseif shouldLock(pet) then
+                printInfo("Locking pet: "..pet.Name)
+                if ReplicatedStorage:FindFirstChild("Remote") and ReplicatedStorage.Remote:FindFirstChild("LockPet") then
+                    ReplicatedStorage.Remote.LockPet:FireServer(pet)
+                end
+            end
+        end
+
+        -- Special Bronto rule
+        if getgenv().placeBrontoOn3KG then
+            checkAndPlaceBronto(pets)
+        end
+
+        -- Place eggs logic
+        if getgenv().autoPlaceEgg then
+            local eggCount = 0
+            for _,egg in ipairs((player:FindFirstChild("Eggs") and player.Eggs:GetChildren()) or {}) do
+                if table.find(getgenv().eggPlace, egg.Name) then
+                    eggCount = eggCount + 1
+                end
+            end
+            if eggCount < getgenv().maxEgg then
+                printInfo("Placing "..(getgenv().maxEgg - eggCount).." eggs...")
+                for i=1, (getgenv().maxEgg - eggCount) do
+                    if ReplicatedStorage:FindFirstChild("Remote") and ReplicatedStorage.Remote:FindFirstChild("PlaceEgg") then
+                        ReplicatedStorage.Remote.PlaceEgg:FireServer(getgenv().eggPlace[1])
+                    end
+                end
+            end
+        end
+
+        wait(10) -- Delay (seconds) before repeating the loop. Adjust as needed.
+    end
+    printInfo("Automation stopped.")
+end)
